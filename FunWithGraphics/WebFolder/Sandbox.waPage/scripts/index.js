@@ -2,6 +2,8 @@
 WAF.onAfterInit = function onAfterInit() {// @lock
 
 // @region namespaceDeclaration// @startlock
+	var iconNext = {};	// @icon
+	var iconPrevious = {};	// @icon
 	var sliderYear = {};	// @slider
 	var buttonRun = {};	// @button
 // @endregion// @endlock
@@ -181,6 +183,8 @@ WAF.onAfterInit = function onAfterInit() {// @lock
 						.text(function(d) { return d; });
 
 					$$('sliderYear').show();
+					$$('iconPrevious').show();
+					$$('iconNext').show();
 					yearsArray.forEach(function(year, index) {
 						drawTree(year, index);
 					});
@@ -197,10 +201,37 @@ WAF.onAfterInit = function onAfterInit() {// @lock
 		sources.currentYear.sync();
 	}
 	
+	function pause_please() {
+		div.selectAll(".node").transition();
+		d3.select(".title").transition();
+		$$('buttonRun').setValue('Run')
+	}
+	
 // eventHandlers// @lock
+
+	iconNext.click = function iconNext_click (event)// @startlock
+	{// @endlock
+		if (currentYear < endYear) {
+			pause_please();
+			currentYear += 1;
+			sources.currentYear.sync();
+			drawTree(currentYear, 0);
+		}
+	};// @lock
+
+	iconPrevious.click = function iconPrevious_click (event)// @startlock
+	{// @endlock
+		if (currentYear > startYear) {
+			pause_please();
+			currentYear -= 1;
+			sources.currentYear.sync();
+			drawTree(currentYear, 0);
+		}
+	};// @lock
 
 	sliderYear.slidestop = function sliderYear_slidestop (event)// @startlock
 	{// @endlock
+		pause_please();
 		var year = $$('sliderYear').getValue();
 		drawTree(year, 0);
 		$$('buttonRun').setValue('Run')
@@ -213,14 +244,13 @@ WAF.onAfterInit = function onAfterInit() {// @lock
 			$$('buttonRun').setValue('Stop')
 		}
 		else {
-			var year = $$('sliderYear').getValue();
-			div.selectAll(".node").transition();
-			d3.select(".title").transition();
-			$$('buttonRun').setValue('Run')
+			pause_please();
 		}
 	};// @lock
 
 // @region eventManager// @startlock
+	WAF.addListener("iconNext", "click", iconNext.click, "WAF");
+	WAF.addListener("iconPrevious", "click", iconPrevious.click, "WAF");
 	WAF.addListener("sliderYear", "slidestop", sliderYear.slidestop, "WAF");
 	WAF.addListener("buttonRun", "click", buttonRun.click, "WAF");
 // @endregion
