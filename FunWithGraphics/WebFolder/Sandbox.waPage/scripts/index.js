@@ -13,7 +13,7 @@ WAF.onAfterInit = function onAfterInit() {// @lock
 	      .style("height", function(d) { return Math.max(0, d.dy - 1) + "px"; });
 	}
 
-	var margin = {top: 40, right: 10, bottom: 10, left: 10},
+	var margin = {top: 90, right: 10, bottom: 10, left: 10},
 	    width = 1200 - margin.left - margin.right,
 	    height = 800 - margin.top - margin.bottom,
 	    transition_delay = 1000,
@@ -25,19 +25,20 @@ WAF.onAfterInit = function onAfterInit() {// @lock
 	
 	var jsonArray = null;
 	var yearsArray = null;
+	var gdp2010 = null;
 
 	var color = function(name) {
 		switch (name) {
 			case 'Federal':
-				return 'cyan';
+				return 'skyblue';
 			case 'Transfers':
-				return 'lightcyan';
+				return 'powderblue';
 			case 'State':
-				return 'yellow';
+				return 'khaki';
 			case 'Local':
-				return 'magenta';
+				return 'plum';
 			default:
-				return 'light gray';
+				return 'lightgray';
 		}
 	}
 
@@ -57,11 +58,11 @@ WAF.onAfterInit = function onAfterInit() {// @lock
     	};
 		
 	var treemap = d3.layout.treemap()
-	    .size([width, height])
-	    .sticky(true)
-	    .value(function(d) { return d.size; })
-	    .mode('slice-dice')
-		.sort(treemapSort);
+		    .size([width, height])
+		    .sticky(true)
+		    .value(function(d) { return d.size; })
+		    .mode('slice-dice')
+			.sort(treemapSort);
 
 	var div = d3.select("body").append("div")
 	    .style("position", "relative")
@@ -73,6 +74,42 @@ WAF.onAfterInit = function onAfterInit() {// @lock
 	var title = d3.select("body").append("div")
 		.attr('class', 'title');
 		
+	function nodeLabel(d) {
+		var prec = 2, prefix = '$', suffix = ' B', v = d.size, name = d.name;
+		var mode = $$('comboboxMetric').getValue();
+		
+		switch (mode) {
+			case 'gdp':
+				v = d.size / d.parent.parent.gdp * 100;
+				suffix = '%';
+				prefix = '';
+				break;
+			case 'constant2010':
+				v = d.size / d.parent.parent.gdp * gdp2010;
+			default:
+				if (v < 1.0) {
+					v *= 1000;
+					suffix = ' M';
+				}
+				else if (v > 1000.0) {
+					v *= 0.001;
+					suffix = ' T';
+				}
+				if (v > 100) {
+					prec = 0;
+				}
+				else if (v > 10) {
+					prec = 1;
+				}
+		}
+		
+		if (d.name === 'Pensions' && d.parent.name === 'Federal') {
+			name = 'Pensions, including Social Security';
+		}
+		
+		return (name.replace('_', ' ') + ': ' + prefix + v.toFixed(prec) + suffix);
+	}
+	
 	function drawTree(year, index) {
 //		debugger;
 		var jsonData = jsonArray[year];
@@ -85,12 +122,13 @@ WAF.onAfterInit = function onAfterInit() {// @lock
 		node.enter().append("div")
 			.attr("class", "node")
 			.call(position)
-			.style("background", function(d) { return d.children ? color(d.name) : null; })
-			.text(function(d) { return d.children ? null : d.name; });
-		
+			.style("background", function(d) { return d.children ? color(d.name) : null; });
+				
 		node.transition()
 			.delay(transition_delay * index)
 			.duration(transition_duration)
+			.text(function(d) { return d.children ? null : nodeLabel(d); })
+			.style('font-size', function(d) { return d.children ? null : (d.size < 1 ? 14 : (d.size > 1000 ? 54 : (14 + d.size / 25).toFixed())) + 'px'; })
 			.call(position);
 
 		node.exit()
@@ -106,13 +144,30 @@ WAF.onAfterInit = function onAfterInit() {// @lock
 			.duration(transition_duration);
 	}
 	
+	function getComponentArray() {
+		var arr = [], i, w;
+		
+		for (i = 0; i < 10; i += 1) {
+			w = $$('checkbox' + i);
+			if (w.getValue()) {
+				arr.push(w.getLabel().getValue().replace(' ', '_'));
+			}
+		}
+		
+		return arr;
+	}
+	
 	function run_run_run(startYear, endYear) {
-		jsonTree = d3Server.loadUSGovernmentDataAsync(
+		var arr = getComponentArray();
+		
+		d3Server.loadUSGovernmentDataAsync(
 			{
-				params: [startYear, endYear],
+				params: [startYear, endYear, arr],
 				onSuccess: function(event) {
 					console.log('d3Server.loadUSGovernmentDataAsync', event);
+					
 					jsonArray = event;
+					gdp2010 = jsonArray['2010'].gdp;
 					yearsArray = Object.keys(jsonArray);
 					
 					d3.select('body').selectAll('.legend')
