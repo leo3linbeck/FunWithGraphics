@@ -17,7 +17,7 @@ WAF.onAfterInit = function onAfterInit() {// @lock
 
 	var margin = {top: 90, right: 10, bottom: 10, left: 10},
 	    width = 1200 - margin.left - margin.right,
-	    height = 800 - margin.top - margin.bottom,
+	    height = 600 - margin.top - margin.bottom,
 	    transition_delay = 1000,
 	    transition_duration = 750;
 	    
@@ -31,6 +31,8 @@ WAF.onAfterInit = function onAfterInit() {// @lock
 
 	var color = function(name) {
 		switch (name) {
+//			case 'Private':
+//				return 'lightgray';
 			case 'Federal':
 				return 'skyblue';
 			case 'Transfers':
